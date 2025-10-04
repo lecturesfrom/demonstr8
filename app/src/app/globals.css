@@ -45,8 +45,8 @@
   --color-border-dw-strong: var(--dw-text-muted);
 
   /* Typography - Inter (body) + Satoshi (headings) */
-  --font-sans: ui-sans-serif, system-ui, sans-serif;
-  --font-display: ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-satoshi), ui-sans-serif, system-ui, sans-serif;
 
   /* Spacing scale (4px/8px/16px/24px rhythm) */
   --spacing-1: 0.25rem;  /* 4px */

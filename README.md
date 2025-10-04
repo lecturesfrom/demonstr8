@@ -28,30 +28,35 @@ Clean, functional, industrial aesthetic inspired by utilitarian design.
 
 ## Current Status
 
-**Milestone 1 (M1) - In Progress**: 7/50 tasks completed (14%)
+**Milestone 1 (M1) - Near Completion**: ~30/50 tasks completed (60%)
 
 ✅ **Completed**:
-- Project documentation (@CLAUDE.md, spec.md, TODO.md, preferences.md)
-- Next.js app setup with TypeScript + Tailwind CSS v4
-- Digital Workwear design system implementation
-- Core components: QueueItem, NowPlaying, ProcessingBadge
-- Supabase client utilities + realtime hooks
+- Project setup with Next.js 14, TypeScript, Tailwind CSS
+- Digital Workwear design system fully implemented
+- All core components: QueueItem, NowPlaying, ProcessingBadge, FileUploader, LivePlayer
+- All pages: submission page, host dashboard (with auth), live page with video player
+- All API routes: Mux upload/webhook, queue management (approve/play/skip), logging
+- Supabase integration with realtime hooks
 - Database schema with Row Level Security policies
+- Authentication guards on host dashboard
+- Mux webhook signature verification
+- Queue position auto-assignment
+- Shared types and constants files
 
-⏳ **Next Steps**:
-- File upload component (Uppy + Mux Direct Upload)
-- API routes for submissions, queue management, Mux webhooks
-- Public submission page + host dashboard + live page
-- End-to-end testing with real Supabase database
+⏳ **Remaining Tasks**:
+- Add loading states to buttons
+- Implement drag-and-drop queue reordering
+- Full end-to-end testing with real Supabase
+- Deploy to Vercel
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS v4
-- **Database**: Supabase (Postgres + Realtime + Auth + Storage)
+- **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS
+- **Database**: Supabase (Postgres + Realtime + Auth)
 - **Video/Audio**: Mux (Direct Upload + Live RTMP streaming)
-- **File Upload**: Uppy + Tus (resumable uploads for large audio files)
-- **Drag & Drop**: @dnd-kit/core (queue reordering)
-- **Deployment**: Vercel (planned)
+- **File Upload**: Fetch API with Mux Direct Upload
+- **Drag & Drop**: @dnd-kit/core (installed, not yet implemented)
+- **Deployment**: Vercel (ready to deploy)
 
 ## Quick Start
 
@@ -75,12 +80,12 @@ Visit `http://localhost:3000` to see the component showcase.
 
 ## Documentation
 
-- **[@CLAUDE.md](.claude/@CLAUDE.md)** — Project context and architecture overview
-- **[spec.md](docs/spec.md)** — Complete product specification with design system
-- **[TODO.md](docs/TODO.md)** — 50-task breakdown for Milestone 1
+- **[@CLAUDE.md](@CLAUDE.md)** — Project context and architecture overview
+- **[spec.md](spec.md)** — Complete product specification with design system
+- **[TODO.md](TODO.md)** — 50-task breakdown for Milestone 1
 - **[preferences.md](.claude/preferences.md)** — Communication patterns and code style
-- **[tech-stack.md](docs/tech-stack.md)** — Technology choices and rationale
-- **[migration.sql](supabase/migrations/migration.sql)** — Database schema
+- **[tech-stack.md](tech-stack.md)** — Technology choices and rationale
+- **[migration-fixed.sql](migration-fixed.sql)** — Database schema with RLS policies
 
 ## Project Structure
 
@@ -89,18 +94,31 @@ lecturesfrom/
 ├── app/
 │   ├── src/
 │   │   ├── app/              # Next.js pages (App Router)
+│   │   │   ├── submit/       # Public submission page
+│   │   │   ├── host/         # Host dashboard (with auth)
+│   │   │   ├── live/         # Public live view page
+│   │   │   └── api/          # API routes for Mux, queue, logging
 │   │   ├── components/       # React components
 │   │   └── lib/
-│   │       ├── hooks/        # Custom React hooks (realtime subscriptions)
+│   │       ├── hooks/        # Custom React hooks (realtime)
+│   │       ├── types.ts      # Shared TypeScript types
+│   │       ├── constants.ts  # Shared constants
+│   │       ├── auth.ts       # Authentication utilities
 │   │       ├── supabase.ts   # Browser client
 │   │       └── supabase-server.ts  # Server client
 │   ├── package.json
 │   └── tailwind.config.ts
-├── supabase/
-│   └── migrations/           # Database schema
-├── docs/                     # Specifications and planning
+├── migration-fixed.sql       # Database schema with RLS
+├── setup-test-event.sql      # Test data setup
 └── .claude/                  # Project context for Claude
 ```
+
+## Known Issues
+
+- **Drag-and-drop reordering**: @dnd-kit is installed but not yet implemented in the host dashboard
+- **Loading states**: Buttons don't show loading spinners during API calls yet
+- **Full auth flow**: Basic auth guard in place, but full Supabase Auth setup needed
+- **Deployment**: Ready for Vercel deployment but not yet deployed
 
 ## License
 

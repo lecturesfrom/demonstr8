@@ -41,7 +41,22 @@ export function useRealtimeNowPlaying(eventId: string) {
       .single()
       .then(({ data, error }) => {
         if (!error && data?.submissions) {
-          setNowPlaying(data.submissions as NowPlayingSubmission)
+          // The submissions field is a single object from the join, not an array
+          const submission = Array.isArray(data.submissions)
+            ? data.submissions[0]
+            : data.submissions
+
+          if (submission) {
+            setNowPlaying({
+              track_title: submission.track_title,
+              artist_name: submission.artist_name,
+              playback_id: submission.playback_id
+            })
+          } else {
+            setNowPlaying(null)
+          }
+        } else {
+          setNowPlaying(null)
         }
         setLoading(false)
       })
@@ -58,12 +73,13 @@ export function useRealtimeNowPlaying(eventId: string) {
           filter: `event_id=eq.${eventId}`,
         },
         async (payload) => {
-          if (payload.new.submission_id) {
+          const newRecord = payload.new as { submission_id?: string }
+          if (newRecord.submission_id) {
             // Fetch full submission data
             const { data } = await supabase
               .from('submissions')
               .select('track_title, artist_name, playback_id')
-              .eq('id', payload.new.submission_id)
+              .eq('id', newRecord.submission_id)
               .single()
 
             if (data) {
