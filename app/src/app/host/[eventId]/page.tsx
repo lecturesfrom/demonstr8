@@ -18,5 +18,5 @@ export default async function HostDashboard({
   const event = await requireHost(eventId)
 
   // Render the client component with event data
-  return <HostDashboardClient eventId={eventId} eventName={event.name} />
+  return <HostDashboardClient eventId={eventId} eventName={event.name} eventToken={event.token} />
 }

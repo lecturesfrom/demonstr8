@@ -14,6 +14,7 @@
 
 'use client'
 
+import { useState } from 'react'
 import { ProcessingBadge } from './ProcessingBadge'
 
 type SubmissionStatus = 'pending' | 'approved' | 'playing' | 'skipped' | 'done'
@@ -40,6 +41,48 @@ export function QueueItem({
   isHost = false
 }: QueueItemProps) {
   const { id, track_title, artist_name, playback_id, status } = submission
+  const [loading, setLoading] = useState(false)
+  const [showSkipConfirm, setShowSkipConfirm] = useState(false)
+
+  // Wrapper handlers with loading state
+  const handleApproveClick = async () => {
+    if (loading) return
+    setLoading(true)
+    try {
+      await onApprove?.(id)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handlePlayClick = async () => {
+    if (loading) return
+    setLoading(true)
+    try {
+      await onPlay?.(id)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSkipClick = () => {
+    setShowSkipConfirm(true)
+  }
+
+  const handleConfirmSkip = async () => {
+    if (loading) return
+    setLoading(true)
+    setShowSkipConfirm(false)
+    try {
+      await onSkip?.(id)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCancelSkip = () => {
+    setShowSkipConfirm(false)
+  }
 
   // Determine card styling based on status
   const getCardClasses = () => {
@@ -85,9 +128,16 @@ export function QueueItem({
           <div className="flex gap-2 ml-4">
             {status === 'pending' && (
               <button
-                onClick={() => onApprove?.(id)}
-                className="border border-border-dw-strong text-dw-text px-4 py-2 rounded-sm hover:bg-dw-surface-alt transition-colors"
+                onClick={handleApproveClick}
+                disabled={loading}
+                className="border border-border-dw-strong text-dw-text px-4 py-2 rounded-sm hover:bg-dw-surface-alt transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
+                {loading && (
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
                 Approve
               </button>
             )}
@@ -96,28 +146,86 @@ export function QueueItem({
               <>
                 {/* THE 1% ACCENT - Only solid accent background in the UI */}
                 <button
-                  onClick={() => onPlay?.(id)}
-                  disabled={!playback_id}
-                  className="bg-dw-accent text-dw-base px-6 py-3 rounded-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:pointer-events-none"
+                  onClick={handlePlayClick}
+                  disabled={!playback_id || loading}
+                  className="bg-dw-accent text-dw-base px-6 py-3 rounded-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
+                  {loading && (
+                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  )}
                   Play
                 </button>
-                <button
-                  onClick={() => onSkip?.(id)}
-                  className="border border-dw-alert text-dw-alert px-4 py-2 rounded-sm hover:bg-dw-alert/10 transition-colors"
-                >
-                  Skip
-                </button>
+                {!showSkipConfirm ? (
+                  <button
+                    onClick={handleSkipClick}
+                    disabled={loading}
+                    className="border border-dw-alert text-dw-alert px-4 py-2 rounded-sm hover:bg-dw-alert/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    Skip
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleConfirmSkip}
+                      disabled={loading}
+                      className="bg-dw-alert text-dw-text px-4 py-2 rounded-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {loading && (
+                        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      )}
+                      Confirm Skip
+                    </button>
+                    <button
+                      onClick={handleCancelSkip}
+                      className="border border-border-dw-muted text-dw-text px-4 py-2 rounded-sm hover:bg-dw-surface-alt transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                )}
               </>
             )}
 
             {status === 'playing' && (
-              <button
-                onClick={() => onSkip?.(id)}
-                className="border border-dw-alert text-dw-alert px-4 py-2 rounded-sm hover:bg-dw-alert/10 transition-colors"
-              >
-                Skip
-              </button>
+              <>
+                {!showSkipConfirm ? (
+                  <button
+                    onClick={handleSkipClick}
+                    disabled={loading}
+                    className="border border-dw-alert text-dw-alert px-4 py-2 rounded-sm hover:bg-dw-alert/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    Skip
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleConfirmSkip}
+                      disabled={loading}
+                      className="bg-dw-alert text-dw-text px-4 py-2 rounded-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {loading && (
+                        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      )}
+                      Confirm Skip
+                    </button>
+                    <button
+                      onClick={handleCancelSkip}
+                      className="border border-border-dw-muted text-dw-text px-4 py-2 rounded-sm hover:bg-dw-surface-alt transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                )}
+              </>
             )}
           </div>
         )}

@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { SubmissionForm } from '@/components/SubmissionForm'
 
 interface Event {
@@ -13,6 +14,8 @@ export function SubmitPageClient({
 }: {
   event: Event
 }) {
+  const router = useRouter()
+
   return (
     <div className="min-h-screen bg-dw-base p-8">
       <div className="max-w-2xl mx-auto">
@@ -31,7 +34,7 @@ export function SubmitPageClient({
         <SubmissionForm
           eventId={event.id}
           onSubmitSuccess={() => {
-            window.location.href = `/live/${event.id}`
+            router.push(`/live/${event.id}`)
           }}
         />
       </div>

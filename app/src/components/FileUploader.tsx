@@ -49,20 +49,46 @@ export function FileUploader({ onUploadComplete, onUploadError }: FileUploaderPr
 
       const { uploadUrl, uploadId } = await res.json()
 
-      // Upload to Mux using fetch
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        body: file,
-        headers: {
-          'Content-Type': file.type,
-        },
+      // Upload to Mux using XMLHttpRequest for progress tracking
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+
+        // Track upload progress
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const percentComplete = Math.round((e.loaded / e.total) * 100)
+            setUploadProgress(percentComplete)
+          }
+        })
+
+        // Handle completion
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve()
+          } else {
+            reject(new Error(`Upload failed with status ${xhr.status}`))
+          }
+        })
+
+        // Handle errors
+        xhr.addEventListener('error', () => {
+          reject(new Error('Network error during upload'))
+        })
+
+        xhr.addEventListener('abort', () => {
+          reject(new Error('Upload cancelled'))
+        })
+
+        // Start upload
+        xhr.open('PUT', uploadUrl)
+        xhr.setRequestHeader('Content-Type', file.type)
+        xhr.send(file)
       })
 
-      if (!uploadRes.ok) throw new Error('Upload failed')
-
-      setUploadProgress(100)
       onUploadComplete(uploadId, file.name)
     } catch (error) {
+      setUploadProgress(0)
+      setSelectedFile(null)
       onUploadError?.(error as Error)
     } finally {
       setUploading(false)
@@ -100,12 +126,17 @@ export function FileUploader({ onUploadComplete, onUploadError }: FileUploaderPr
               {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
             </p>
             {uploading && (
-              <div className="w-full bg-dw-surface rounded-full h-2 mb-4">
-                <div
-                  className="bg-dw-accent h-2 rounded-full transition-all"
-                  style={{ width: `${uploadProgress}%` }}
-                />
-              </div>
+              <>
+                <div className="w-full bg-dw-surface rounded-full h-2 mb-2">
+                  <div
+                    className="bg-dw-accent h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+                <p className="text-sm text-dw-text-muted">
+                  Uploading... {uploadProgress}%
+                </p>
+              </>
             )}
             {!uploading && uploadProgress === 100 && (
               <p className="text-dw-success text-sm">✓ Upload complete</p>
