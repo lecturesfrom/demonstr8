@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 
 interface FileUploaderProps {
-  eventId: string
+  eventId?: string
   onUploadComplete: (fileUrl: string, filename: string) => void
   onUploadError?: (error: Error) => void
 }
@@ -46,7 +46,8 @@ export function FileUploader({ eventId, onUploadComplete, onUploadError }: FileU
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           filename: file.name,
-          eventId: eventId || 'default'
+          eventId: eventId,
+          fileSize: file.size
         }),
       })
 

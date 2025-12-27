@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       .eq('status', 'approved')
       .order('queue_position', { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle()
 
     const nextPosition = (maxPosData?.queue_position || 0) + 1
 

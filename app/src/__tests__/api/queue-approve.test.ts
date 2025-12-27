@@ -1,27 +1,47 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { POST } from '@/app/api/queue/approve/route'
 import { NextRequest } from 'next/server'
-import { createClient } from '@/lib/supabase-server'
+
+// Create singleton mock objects
+const mockMaybeSingle = vi.fn()
+const mockSingle = vi.fn()
+const mockInsert = vi.fn().mockResolvedValue({ error: null })
+
+const mockQueryBuilder = {
+  select: vi.fn().mockReturnThis(),
+  update: vi.fn().mockReturnThis(),
+  insert: vi.fn().mockReturnValue({ error: null }),
+  eq: vi.fn().mockReturnThis(),
+  order: vi.fn().mockReturnThis(),
+  limit: vi.fn().mockReturnThis(),
+  maybeSingle: mockMaybeSingle,
+  single: mockSingle,
+}
+
+const mockSupabaseClient = {
+  from: vi.fn(() => mockQueryBuilder),
+}
+
+vi.mock('@/lib/supabase-server', () => ({
+  createClient: vi.fn(() => mockSupabaseClient),
+}))
 
 describe('Queue Approve API', () => {
-  let mockClient: ReturnType<typeof createClient>
-  let mockChain: ReturnType<typeof mockClient.from>
-
   beforeEach(() => {
-    mockClient = createClient()
-    mockChain = mockClient.from()
+    vi.clearAllMocks()
+    // Reset default insert behavior
+    mockQueryBuilder.insert = vi.fn().mockResolvedValue({ error: null })
   })
 
   it('should approve a submission successfully', async () => {
-    // Mock the max position query
-    mockChain.single.mockResolvedValueOnce({
+    // Mock the max position query (maybeSingle)
+    mockMaybeSingle.mockResolvedValueOnce({
       data: { queue_position: 5 },
       error: null,
     })
 
-    // Mock the update query
-    mockChain.single.mockResolvedValueOnce({
+    // Mock the update query (single)
+    mockSingle.mockResolvedValueOnce({
       data: {
         id: 'test-submission-id',
         event_id: 'test-event-id',
@@ -59,13 +79,13 @@ describe('Queue Approve API', () => {
 
   it('should handle database errors gracefully', async () => {
     // Mock successful max position query
-    mockChain.single.mockResolvedValueOnce({
+    mockMaybeSingle.mockResolvedValueOnce({
       data: { queue_position: 5 },
       error: null,
     })
 
     // Mock failed update query
-    mockChain.single.mockResolvedValueOnce({
+    mockSingle.mockResolvedValueOnce({
       data: null,
       error: { message: 'Database error' },
     })

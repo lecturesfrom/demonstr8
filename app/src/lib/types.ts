@@ -126,7 +126,11 @@ export interface QueueItemProps {
 }
 
 export interface NowPlayingProps {
-  submission: Submission | null
+  submission: {
+    track_title: string
+    artist_name: string
+    file_url: string | null
+  } | null
 }
 
 // API response types
@@ -138,10 +142,10 @@ export interface ApiResponse<T = unknown> {
 
 // IVS types
 export interface IVSChannelInfo {
-  channelArn: string
-  streamKey: string
-  ingestEndpoint: string
-  playbackUrl: string
+  channel_arn: string
+  stream_key: string
+  ingest_endpoint: string
+  playback_url: string
 }
 
 // Opportunity Engine types

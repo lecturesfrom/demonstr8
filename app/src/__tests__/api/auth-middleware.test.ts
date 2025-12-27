@@ -1,32 +1,43 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { requireAuth, requireEventHost, rateLimit } from '@/lib/auth-middleware'
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase-server'
+
+// Create singleton mock objects that persist across all createClient() calls
+const mockSingle = vi.fn()
+const mockQueryBuilder = {
+  select: vi.fn().mockReturnThis(),
+  eq: vi.fn().mockReturnThis(),
+  single: mockSingle,
+}
+
+const mockGetSession = vi.fn()
+const mockSupabaseClient = {
+  auth: {
+    getSession: mockGetSession,
+  },
+  from: vi.fn(() => mockQueryBuilder),
+}
+
+vi.mock('@/lib/supabase-server', () => ({
+  createClient: vi.fn(() => mockSupabaseClient),
+}))
 
 describe('Authentication Middleware', () => {
-  let mockClient: ReturnType<typeof createClient>
-  let mockChain: ReturnType<typeof mockClient.from>
-
   beforeEach(() => {
-    mockClient = createClient()
-    mockChain = mockClient.from()
-
-    // Clear mock state to prevent pollution between tests
-    mockClient.auth.getSession.mockClear()
-    mockChain.single.mockClear()
+    // Clear all mocks between tests
+    vi.clearAllMocks()
   })
 
   describe('requireAuth', () => {
     it('should allow authenticated requests', async () => {
       // Mock successful authentication
-      mockClient.auth.getSession.mockResolvedValueOnce({
+      mockGetSession.mockResolvedValueOnce({
         data: { session: { user: { id: 'user-123' } } },
         error: null,
       })
 
       // Mock profile query
-      mockChain.single.mockResolvedValueOnce({
+      mockSingle.mockResolvedValueOnce({
         data: { role: 'host' },
         error: null,
       })
@@ -46,7 +57,7 @@ describe('Authentication Middleware', () => {
 
     it('should reject unauthenticated requests', async () => {
       // Mock failed authentication
-      mockClient.auth.getSession.mockResolvedValueOnce({
+      mockGetSession.mockResolvedValueOnce({
         data: { session: null },
         error: null,
       })
@@ -66,14 +77,15 @@ describe('Authentication Middleware', () => {
 
   describe('requireEventHost', () => {
     it('should allow event host to access', async () => {
-      // Mock auth session
-      mockClient.auth.getSession.mockResolvedValueOnce({
-        data: { session: { user: { id: 'host-123' } } },
-        error: null,
-      })
+      // Mock auth session (called twice - once in requireAuth wrapper, once in requireEventHost)
+      mockGetSession
+        .mockResolvedValueOnce({
+          data: { session: { user: { id: 'host-123' } } },
+          error: null,
+        })
 
       // First call is for profile, second is for event ownership
-      mockChain.single
+      mockSingle
         .mockResolvedValueOnce({
           data: { role: 'host' },
           error: null,
@@ -88,8 +100,7 @@ describe('Authentication Middleware', () => {
       )
 
       const request = {
-        json: async () => ({ eventId: 'event-123' }),
-        userId: 'host-123',
+        json: vi.fn().mockResolvedValue({ eventId: 'event-123' }),
       } as unknown as NextRequest
 
       const protectedHandler = await requireEventHost(mockHandler)
@@ -100,13 +111,13 @@ describe('Authentication Middleware', () => {
 
     it('should reject non-host users', async () => {
       // Mock auth session
-      mockClient.auth.getSession.mockResolvedValueOnce({
+      mockGetSession.mockResolvedValueOnce({
         data: { session: { user: { id: 'user-123' } } },
         error: null,
       })
 
       // First call for profile, second for event ownership
-      mockChain.single
+      mockSingle
         .mockResolvedValueOnce({
           data: { role: 'fan' },
           error: null,
@@ -118,8 +129,7 @@ describe('Authentication Middleware', () => {
 
       const mockHandler = vi.fn()
       const request = {
-        json: async () => ({ eventId: 'event-123' }),
-        userId: 'user-123',
+        json: vi.fn().mockResolvedValue({ eventId: 'event-123' }),
       } as unknown as NextRequest
 
       const protectedHandler = await requireEventHost(mockHandler)
