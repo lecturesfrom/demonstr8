@@ -10,7 +10,6 @@
 
 import { QueueItem } from '@/components/QueueItem'
 import { NowPlaying } from '@/components/NowPlaying'
-import { ProcessingBadge } from '@/components/ProcessingBadge'
 
 export default function Home() {
   // Dummy data for showcasing components
@@ -19,28 +18,28 @@ export default function Home() {
       id: '1',
       track_title: 'Track in Processing',
       artist_name: 'Pending Artist',
-      playback_id: null,
+      file_url: null,
       status: 'pending' as const,
     },
     {
       id: '2',
       track_title: 'Ready to Play Track',
       artist_name: 'Approved Artist',
-      playback_id: 'abc123',
+      file_url: 'https://example.com/track.mp3',
       status: 'approved' as const,
     },
     {
       id: '3',
       track_title: 'Currently Playing Track',
       artist_name: 'Active Artist',
-      playback_id: 'def456',
+      file_url: 'https://example.com/track2.mp3',
       status: 'playing' as const,
     },
     {
       id: '4',
       track_title: 'Skipped Track',
       artist_name: 'Skipped Artist',
-      playback_id: 'ghi789',
+      file_url: 'https://example.com/track3.mp3',
       status: 'skipped' as const,
     },
   ]
@@ -48,7 +47,7 @@ export default function Home() {
   const nowPlayingSubmission = {
     track_title: 'Currently Playing Track',
     artist_name: 'Active Artist',
-    playback_id: 'def456',
+    file_url: 'https://example.com/track2.mp3',
   }
 
   return (
@@ -68,17 +67,17 @@ export default function Home() {
           <NowPlaying submission={nowPlayingSubmission} />
         </section>
 
-        {/* Processing Badges */}
+        {/* File Status Display */}
         <section className="mb-12">
-          <h2 className="dw-h3 text-dw-text mb-4">Processing Badges</h2>
+          <h2 className="dw-h3 text-dw-text mb-4">File Status Indicators</h2>
           <div className="bg-dw-surface border border-border-dw-muted rounded-sm p-6 flex gap-8">
             <div>
               <p className="text-dw-text-muted text-sm mb-2">Processing:</p>
-              <ProcessingBadge playback_id={null} />
+              <span className="text-sm text-dw-muted animate-pulse">⏳ Processing</span>
             </div>
             <div>
               <p className="text-dw-text-muted text-sm mb-2">Ready:</p>
-              <ProcessingBadge playback_id="abc123" />
+              <span className="text-sm text-dw-success">✓ Ready</span>
             </div>
           </div>
         </section>

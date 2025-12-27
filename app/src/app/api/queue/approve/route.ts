@@ -1,76 +1,64 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase-server'
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const { submissionId } = await request.json()
+    const body = await request.json()
+    const { submissionId } = body
 
     if (!submissionId) {
       return NextResponse.json(
-        { error: 'submissionId required' },
+        { error: 'submissionId is required' },
         { status: 400 }
       )
     }
 
     const supabase = createClient()
 
-    // First, get the submission to find its event_id
-    const { data: submission, error: fetchError } = await supabase
-      .from('submissions')
-      .select('event_id')
-      .eq('id', submissionId)
-      .single()
-
-    if (fetchError || !submission) {
-      throw new Error('Submission not found')
-    }
-
-    // Get the maximum queue position for approved items in this event
-    const { data: maxPositionData } = await supabase
+    // Get current max queue position
+    const { data: maxPosData } = await supabase
       .from('submissions')
       .select('queue_position')
-      .eq('event_id', submission.event_id)
       .eq('status', 'approved')
       .order('queue_position', { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle()
 
-    // Calculate the next position (1-indexed)
-    const nextPosition = maxPositionData?.queue_position
-      ? maxPositionData.queue_position + 1
-      : 1
+    const nextPosition = (maxPosData?.queue_position || 0) + 1
 
     // Update submission status to approved with queue position
-    const { error: updateError } = await supabase
+    const { data, error } = await supabase
       .from('submissions')
       .update({
         status: 'approved',
         queue_position: nextPosition
       })
       .eq('id', submissionId)
+      .select()
+      .single()
 
-    if (updateError) throw updateError
+    if (error) {
+      console.error('Failed to approve submission:', error)
+      return NextResponse.json(
+        { error: 'Failed to approve submission' },
+        { status: 500 }
+      )
+    }
 
-    // Log the approval event
+    // Log the action
     await supabase
       .from('event_logs')
       .insert({
-        event_id: submission.event_id,
+        event_id: data.event_id,
         action: 'approve',
-        payload: {
-          submission_id: submissionId,
-          queue_position: nextPosition
-        }
+        payload: { submission_id: submissionId, queue_position: nextPosition }
       })
 
-    return NextResponse.json({
-      success: true,
-      queue_position: nextPosition
-    })
+    return NextResponse.json({ data })
   } catch (error) {
-    console.error('Approve failed:', error)
+    console.error('Approve endpoint error:', error)
     return NextResponse.json(
-      { error: 'Failed to approve submission' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

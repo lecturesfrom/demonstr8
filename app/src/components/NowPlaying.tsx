@@ -1,18 +1,18 @@
 /**
  * NowPlaying Component
  *
- * What: Displays currently playing track
+ * What: Displays currently playing track with audio player
  * Why: Shows what's live on both host dashboard and public live page
- * How it helps users: Everyone sees the same "Now Playing" in real-time
+ * How it helps users: Everyone sees and HEARS the same track in real-time
  */
 
-import { ProcessingBadge } from './ProcessingBadge'
+import { AudioPlayer } from './AudioPlayer'
 
 interface NowPlayingProps {
   submission: {
     track_title: string
     artist_name: string
-    playback_id: string | null
+    file_url: string | null
   } | null
 }
 
@@ -29,11 +29,10 @@ export function NowPlaying({ submission }: NowPlayingProps) {
   }
 
   return (
-    <div className="bg-dw-surface border border-dw-accent rounded-sm p-8">
-      <span className="dw-label text-dw-muted mb-4 block">Now Playing</span>
-      <h2 className="dw-h2 text-dw-text mb-2">{submission.track_title}</h2>
-      <p className="dw-body text-dw-text-muted mb-4">{submission.artist_name}</p>
-      <ProcessingBadge playback_id={submission.playback_id} />
-    </div>
+    <AudioPlayer
+      fileUrl={submission.file_url}
+      trackTitle={submission.track_title}
+      artistName={submission.artist_name}
+    />
   )
 }

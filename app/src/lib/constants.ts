@@ -51,12 +51,10 @@ export const FILE_UPLOAD = {
   CHUNK_SIZE_BYTES: 50 * 1024 * 1024, // 50MB chunks for resumable uploads
 } as const
 
-// Mux configuration
-export const MUX_CONFIG = {
+// AWS IVS configuration
+export const IVS_CONFIG = {
   MAX_DURATION_SECONDS: 3600, // 1 hour max
-  PLAYBACK_POLICY: 'public' as const,
   STREAM_TYPE: 'live' as const,
-  ASSET_TYPE: 'audio' as const,
 } as const
 
 // UI constants
@@ -70,8 +68,7 @@ export const UI = {
 
 // API endpoints (relative)
 export const API_ENDPOINTS = {
-  MUX_CREATE_UPLOAD: '/api/mux/create-upload',
-  MUX_WEBHOOK: '/api/mux/webhook',
+  UPLOAD_CREATE: '/api/upload/create',
   SUBMISSIONS: '/api/submissions',
   QUEUE_APPROVE: '/api/queue/approve',
   QUEUE_PLAY: '/api/queue/play',

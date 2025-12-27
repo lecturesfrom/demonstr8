@@ -16,7 +16,7 @@ import { createClient } from '../supabase'
 type NowPlayingSubmission = {
   track_title: string
   artist_name: string
-  playback_id: string | null
+  file_url: string | null
 } | null
 
 export function useRealtimeNowPlaying(eventId: string) {
@@ -34,7 +34,7 @@ export function useRealtimeNowPlaying(eventId: string) {
         submissions (
           track_title,
           artist_name,
-          playback_id
+          file_url
         )
       `)
       .eq('event_id', eventId)
@@ -50,7 +50,7 @@ export function useRealtimeNowPlaying(eventId: string) {
             setNowPlaying({
               track_title: submission.track_title,
               artist_name: submission.artist_name,
-              playback_id: submission.playback_id
+              file_url: submission.file_url
             })
           } else {
             setNowPlaying(null)
@@ -78,7 +78,7 @@ export function useRealtimeNowPlaying(eventId: string) {
             // Fetch full submission data
             const { data } = await supabase
               .from('submissions')
-              .select('track_title, artist_name, playback_id')
+              .select('track_title, artist_name, file_url')
               .eq('id', newRecord.submission_id)
               .single()
 
