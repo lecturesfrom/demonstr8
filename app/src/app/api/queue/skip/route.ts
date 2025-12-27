@@ -1,13 +1,14 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase-server'
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const { submissionId } = await request.json()
+    const body = await request.json()
+    const { submissionId } = body
 
     if (!submissionId) {
       return NextResponse.json(
-        { error: 'submissionId required' },
+        { error: 'submissionId is required' },
         { status: 400 }
       )
     }
@@ -15,18 +16,37 @@ export async function POST(request: Request) {
     const supabase = createClient()
 
     // Update submission status to skipped
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('submissions')
       .update({ status: 'skipped' })
       .eq('id', submissionId)
+      .select()
+      .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('Failed to skip submission:', error)
+      return NextResponse.json(
+        { error: 'Failed to skip submission' },
+        { status: 500 }
+      )
+    }
 
-    return NextResponse.json({ success: true })
+    // Log the action
+    if (data) {
+      await supabase
+        .from('event_logs')
+        .insert({
+          event_id: data.event_id,
+          action: 'skip',
+          payload: { submission_id: submissionId }
+        })
+    }
+
+    return NextResponse.json({ data })
   } catch (error) {
-    console.error('Skip failed:', error)
+    console.error('Skip endpoint error:', error)
     return NextResponse.json(
-      { error: 'Failed to skip submission' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

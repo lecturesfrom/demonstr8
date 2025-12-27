@@ -14,22 +14,23 @@
 
 'use client'
 
-import { ProcessingBadge } from './ProcessingBadge'
-
-type SubmissionStatus = 'pending' | 'approved' | 'playing' | 'skipped' | 'done'
+import { TrackInfo } from './common/TrackInfo'
+import { ActionButton } from './common/ActionButton'
+import type { SubmissionStatus } from '@/types'
 
 interface QueueItemProps {
   submission: {
     id: string
     track_title: string
     artist_name: string
-    playback_id: string | null
+    file_url: string | null
     status: SubmissionStatus
   }
   onApprove?: (id: string) => void
   onPlay?: (id: string) => void
   onSkip?: (id: string) => void
   isHost?: boolean
+  isLoading?: boolean
 }
 
 export function QueueItem({
@@ -37,9 +38,10 @@ export function QueueItem({
   onApprove,
   onPlay,
   onSkip,
-  isHost = false
+  isHost = false,
+  isLoading = false
 }: QueueItemProps) {
-  const { id, track_title, artist_name, playback_id, status } = submission
+  const { id, track_title, artist_name, file_url, status } = submission
 
   // Determine card styling based on status
   const getCardClasses = () => {
@@ -66,58 +68,56 @@ export function QueueItem({
     <div className={getCardClasses()}>
       <div className="flex items-center justify-between">
         <div className="flex-1 min-w-0">
-          <h3 className="text-xl font-bold text-dw-text mb-1 truncate">
-            {track_title}
-          </h3>
-          <p className="text-base text-dw-text-muted mb-2 truncate">
-            {artist_name}
-          </p>
-          <ProcessingBadge playback_id={playback_id} />
-          {status === 'playing' && (
-            <span className="ml-3 text-sm text-dw-accent uppercase tracking-wider">
-              🎵 Playing
-            </span>
-          )}
+          <TrackInfo
+            trackTitle={track_title}
+            artistName={artist_name}
+            fileUrl={file_url}
+            status={status}
+          />
         </div>
 
         {/* Host Actions */}
         {isHost && (
           <div className="flex gap-2 ml-4">
             {status === 'pending' && (
-              <button
+              <ActionButton
                 onClick={() => onApprove?.(id)}
-                className="border border-border-dw-strong text-dw-text px-4 py-2 rounded-sm hover:bg-dw-surface-alt transition-colors"
+                isLoading={isLoading}
+                loadingText="Approving..."
+                variant="secondary"
+                className="border-border-dw-strong text-dw-text hover:bg-dw-surface-alt"
               >
                 Approve
-              </button>
+              </ActionButton>
             )}
 
             {status === 'approved' && (
               <>
                 {/* THE 1% ACCENT - Only solid accent background in the UI */}
-                <button
+                <ActionButton
                   onClick={() => onPlay?.(id)}
-                  disabled={!playback_id}
-                  className="bg-dw-accent text-dw-base px-6 py-3 rounded-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:pointer-events-none"
+                  disabled={!file_url}
+                  variant="primary"
+                  className="px-6 py-3 font-medium"
                 >
                   Play
-                </button>
-                <button
+                </ActionButton>
+                <ActionButton
                   onClick={() => onSkip?.(id)}
-                  className="border border-dw-alert text-dw-alert px-4 py-2 rounded-sm hover:bg-dw-alert/10 transition-colors"
+                  variant="danger"
                 >
                   Skip
-                </button>
+                </ActionButton>
               </>
             )}
 
             {status === 'playing' && (
-              <button
+              <ActionButton
                 onClick={() => onSkip?.(id)}
-                className="border border-dw-alert text-dw-alert px-4 py-2 rounded-sm hover:bg-dw-alert/10 transition-colors"
+                variant="danger"
               >
                 Skip
-              </button>
+              </ActionButton>
             )}
           </div>
         )}

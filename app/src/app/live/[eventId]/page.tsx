@@ -27,14 +27,14 @@ export default async function LivePage({
     notFound()
   }
 
-  // Use default playback ID from env if event doesn't have one
-  const playbackId = event.mux_live_playback_id || process.env.MUX_LIVE_PLAYBACK_ID_DEFAULT || null
+  // Use IVS playback URL from event
+  const playbackUrl = event.ivs_playback_url || null
 
   return (
     <LivePageClient
       eventId={eventId}
       eventName={event.name}
-      muxPlaybackId={playbackId}
+      ivsPlaybackUrl={playbackUrl}
     />
   )
 }

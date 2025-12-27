@@ -12,12 +12,12 @@ interface SubmissionFormProps {
 export function SubmissionForm({ eventId, onSubmitSuccess }: SubmissionFormProps) {
   const [artistName, setArtistName] = useState('')
   const [trackTitle, setTrackTitle] = useState('')
-  const [uploadId, setUploadId] = useState<string | null>(null)
+  const [fileUrl, setFileUrl] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleUploadComplete = (muxUploadId: string, filename: string) => {
-    setUploadId(muxUploadId)
+  const handleUploadComplete = (uploadedFileUrl: string, filename: string) => {
+    setFileUrl(uploadedFileUrl)
 
     // Auto-fill track title from filename if empty
     if (!trackTitle) {
@@ -29,7 +29,7 @@ export function SubmissionForm({ eventId, onSubmitSuccess }: SubmissionFormProps
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!uploadId) {
+    if (!fileUrl) {
       setError('Please upload an audio file first')
       return
     }
@@ -52,7 +52,7 @@ export function SubmissionForm({ eventId, onSubmitSuccess }: SubmissionFormProps
           event_id: eventId,
           artist_name: artistName,
           track_title: trackTitle,
-          upload_id: uploadId,
+          file_url: fileUrl,
           status: 'pending',
         })
 
@@ -75,7 +75,7 @@ export function SubmissionForm({ eventId, onSubmitSuccess }: SubmissionFormProps
       // Reset form
       setArtistName('')
       setTrackTitle('')
-      setUploadId(null)
+      setFileUrl(null)
     } catch (err) {
       console.error('Submission failed:', err)
       setError('Failed to submit track. Please try again.')
@@ -95,6 +95,7 @@ export function SubmissionForm({ eventId, onSubmitSuccess }: SubmissionFormProps
             Audio File *
           </label>
           <FileUploader
+            eventId={eventId}
             onUploadComplete={handleUploadComplete}
             onUploadError={(err) => setError(err.message)}
           />
@@ -142,7 +143,7 @@ export function SubmissionForm({ eventId, onSubmitSuccess }: SubmissionFormProps
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={!uploadId || isSubmitting}
+          disabled={!fileUrl || isSubmitting}
           className="w-full bg-dw-accent text-dw-base font-bold px-6 py-3 rounded-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-dw-accent/90 transition-colors"
         >
           {isSubmitting ? 'Submitting...' : 'Submit Track'}

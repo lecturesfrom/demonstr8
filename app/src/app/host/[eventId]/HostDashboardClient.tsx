@@ -1,9 +1,26 @@
 'use client'
 
+import { useState } from 'react'
 import { useRealtimeQueue } from '@/lib/hooks/useRealtimeQueue'
 import { useRealtimeNowPlaying } from '@/lib/hooks/useRealtimeNowPlaying'
 import { QueueItem } from '@/components/QueueItem'
 import { NowPlaying } from '@/components/NowPlaying'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { SortableQueueItem } from '@/components/SortableQueueItem'
 
 interface HostDashboardClientProps {
   eventId: string
@@ -13,29 +30,96 @@ interface HostDashboardClientProps {
 export default function HostDashboardClient({ eventId, eventName }: HostDashboardClientProps) {
   const { submissions, loading: queueLoading } = useRealtimeQueue(eventId)
   const { nowPlaying, loading: npLoading } = useRealtimeNowPlaying(eventId)
+  const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({})
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
 
   const handleApprove = async (submissionId: string) => {
-    await fetch('/api/queue/approve', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ submissionId }),
-    })
+    setLoadingStates(prev => ({ ...prev, [`approve-${submissionId}`]: true }))
+    try {
+      const response = await fetch('/api/queue/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ submissionId }),
+      })
+      if (!response.ok) throw new Error('Failed to approve')
+    } catch (error) {
+      console.error('Approve failed:', error)
+      alert('Failed to approve submission')
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [`approve-${submissionId}`]: false }))
+    }
   }
 
   const handlePlay = async (submissionId: string) => {
-    await fetch('/api/queue/play', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ submissionId, eventId }),
-    })
+    setLoadingStates(prev => ({ ...prev, [`play-${submissionId}`]: true }))
+    try {
+      const response = await fetch('/api/queue/play', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ submissionId, eventId }),
+      })
+      if (!response.ok) throw new Error('Failed to play')
+    } catch (error) {
+      console.error('Play failed:', error)
+      alert('Failed to play submission')
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [`play-${submissionId}`]: false }))
+    }
   }
 
   const handleSkip = async (submissionId: string) => {
-    await fetch('/api/queue/skip', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ submissionId }),
-    })
+    setLoadingStates(prev => ({ ...prev, [`skip-${submissionId}`]: true }))
+    try {
+      const response = await fetch('/api/queue/skip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ submissionId }),
+      })
+      if (!response.ok) throw new Error('Failed to skip')
+    } catch (error) {
+      console.error('Skip failed:', error)
+      alert('Failed to skip submission')
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [`skip-${submissionId}`]: false }))
+    }
+  }
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (over && active.id !== over.id) {
+      const oldIndex = approved.findIndex((item) => item.id === active.id)
+      const newIndex = approved.findIndex((item) => item.id === over.id)
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newOrder = arrayMove(approved, oldIndex, newIndex)
+        const submissionIds = newOrder.map(item => item.id)
+
+        // Call reorder API
+        try {
+          const response = await fetch('/api/queue/reorder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ submissionIds, eventId }),
+          })
+          if (!response.ok) throw new Error('Failed to reorder')
+        } catch (error) {
+          console.error('Reorder failed:', error)
+          alert('Failed to reorder queue')
+        }
+      }
+    }
   }
 
   if (queueLoading || npLoading) {
@@ -83,32 +167,53 @@ export default function HostDashboardClient({ eventId, eventName }: HostDashboar
                     submission={sub}
                     onApprove={handleApprove}
                     isHost
+                    isLoading={loadingStates[`approve-${sub.id}`] || false}
                   />
                 ))
               )}
             </div>
           </div>
 
-          {/* Approved/Queue */}
+          {/* Approved/Queue - With Drag and Drop */}
           <div>
             <h3 className="text-xl font-bold text-dw-text mb-4">
               Queue ({approved.length})
-            </h3>
-            <div className="space-y-4">
-              {approved.length === 0 ? (
-                <p className="text-dw-muted text-sm">No approved tracks</p>
-              ) : (
-                approved.map((sub) => (
-                  <QueueItem
-                    key={sub.id}
-                    submission={sub}
-                    onPlay={handlePlay}
-                    onSkip={handleSkip}
-                    isHost
-                  />
-                ))
+              {approved.length > 1 && (
+                <span className="text-sm font-normal text-dw-muted ml-2">
+                  (drag to reorder)
+                </span>
               )}
-            </div>
+            </h3>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={approved.map(s => s.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-4">
+                  {approved.length === 0 ? (
+                    <p className="text-dw-muted text-sm">No approved tracks</p>
+                  ) : (
+                    approved.map((sub) => (
+                      <SortableQueueItem
+                        key={sub.id}
+                        submission={sub}
+                        onPlay={handlePlay}
+                        onSkip={handleSkip}
+                        isHost
+                        isLoading={{
+                          play: loadingStates[`play-${sub.id}`] || false,
+                          skip: loadingStates[`skip-${sub.id}`] || false,
+                        }}
+                      />
+                    ))
+                  )}
+                </div>
+              </SortableContext>
+            </DndContext>
           </div>
 
           {/* Done/History */}

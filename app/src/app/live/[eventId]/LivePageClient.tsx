@@ -9,13 +9,13 @@ import { LivePlayer } from '@/components/LivePlayer'
 interface LivePageClientProps {
   eventId: string
   eventName: string
-  muxPlaybackId: string | null
+  ivsPlaybackUrl: string | null
 }
 
 export default function LivePageClient({
   eventId,
   eventName,
-  muxPlaybackId
+  ivsPlaybackUrl
 }: LivePageClientProps) {
   const { submissions } = useRealtimeQueue(eventId)
   const { nowPlaying } = useRealtimeNowPlaying(eventId)
@@ -40,9 +40,9 @@ export default function LivePageClient({
         </div>
 
         {/* Live Stream Player */}
-        {muxPlaybackId && (
+        {ivsPlaybackUrl && (
           <div className="mb-8">
-            <LivePlayer playbackId={muxPlaybackId} eventName={eventName} />
+            <LivePlayer playbackUrl={ivsPlaybackUrl} eventName={eventName} />
           </div>
         )}
 

@@ -18,8 +18,7 @@ type Submission = {
   event_id: string
   artist_name: string
   track_title: string
-  upload_id: string
-  playback_id: string | null
+  file_url: string | null
   tip_cents: number
   status: 'pending' | 'approved' | 'playing' | 'skipped' | 'done'
   queue_position: number | null

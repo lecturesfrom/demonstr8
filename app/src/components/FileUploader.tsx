@@ -3,11 +3,12 @@
 import { useState, useRef } from 'react'
 
 interface FileUploaderProps {
-  onUploadComplete: (uploadId: string, filename: string) => void
+  eventId: string
+  onUploadComplete: (fileUrl: string, filename: string) => void
   onUploadError?: (error: Error) => void
 }
 
-export function FileUploader({ onUploadComplete, onUploadError }: FileUploaderProps) {
+export function FileUploader({ eventId, onUploadComplete, onUploadError }: FileUploaderProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
@@ -23,9 +24,10 @@ export function FileUploader({ onUploadComplete, onUploadError }: FileUploaderPr
       return
     }
 
-    // Validate file size (500MB max)
-    if (file.size > 500 * 1024 * 1024) {
-      onUploadError?.(new Error('File too large. Maximum size is 500MB'))
+    // Validate file size (50MB max for Supabase Free tier)
+    // Upgrade to Pro for 5GB uploads
+    if (file.size > 50 * 1024 * 1024) {
+      onUploadError?.(new Error('File too large. Maximum size is 50MB'))
       return
     }
 
@@ -38,18 +40,21 @@ export function FileUploader({ onUploadComplete, onUploadError }: FileUploaderPr
     setUploadProgress(0)
 
     try {
-      // Get Mux upload URL
-      const res = await fetch('/api/mux/create-upload', {
+      // Get Supabase upload URL
+      const res = await fetch('/api/upload/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: file.name }),
+        body: JSON.stringify({
+          filename: file.name,
+          eventId: eventId || 'default'
+        }),
       })
 
       if (!res.ok) throw new Error('Failed to create upload URL')
 
-      const { uploadUrl, uploadId } = await res.json()
+      const { uploadUrl, fileUrl } = await res.json()
 
-      // Upload to Mux using fetch
+      // Upload to Supabase Storage
       const uploadRes = await fetch(uploadUrl, {
         method: 'PUT',
         body: file,
@@ -61,7 +66,7 @@ export function FileUploader({ onUploadComplete, onUploadError }: FileUploaderPr
       if (!uploadRes.ok) throw new Error('Upload failed')
 
       setUploadProgress(100)
-      onUploadComplete(uploadId, file.name)
+      onUploadComplete(fileUrl, file.name)
     } catch (error) {
       onUploadError?.(error as Error)
     } finally {
@@ -90,7 +95,7 @@ export function FileUploader({ onUploadComplete, onUploadError }: FileUploaderPr
               Browse files
             </button>
             <p className="text-sm text-dw-muted mt-4">
-              Audio files only, up to 500MB
+              MP3, WAV, M4A, AAC • Max 50MB
             </p>
           </div>
         ) : (

@@ -1,5 +1,7 @@
-# Live Listening + Submission + Monetized Replay — MVP Spec (Digital Workwear Edition)
+# ⚠️ ARCHIVED: Live Listening + Submission + Monetized Replay — MVP Spec (Digital Workwear Edition)
 
+> **⚠️ HISTORICAL DOCUMENT**: This spec was written for the original Mux-based architecture. The project has since migrated to AWS IVS + Supabase Storage. See [CLAUDE.md](CLAUDE.md) for current architecture and [TODO.md](TODO.md) for current status.
+>
 > **📚 Related Files:** [@CLAUDE.md](@CLAUDE.md) (project context) | [tech-stack.md](tech-stack.md) (services & setup) | [TODO.md](TODO.md) (M1 tasks) | [.claude/preferences.md](.claude/preferences.md) (communication guide)
 
 ---
